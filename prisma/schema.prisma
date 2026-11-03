@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Profesional {
+  id     Int     @id @default(autoincrement())
+  nombre String
+  activo Boolean @default(true)
+  citas  Cita[]
+}
+
+model Servicio {
+  id          Int     @id @default(autoincrement())
+  nombre      String
+  duracionMin Int
+  precio      Int
+  activo      Boolean @default(true)
+  citas       Cita[]
+}
+
+enum EstadoCita {
+  CONFIRMADA
+  COMPLETADA
+  CANCELADA
+}
+
+model Cita {
+  id            Int         @id @default(autoincrement())
+  profesionalId Int
+  profesional   Profesional @relation(fields: [profesionalId], references: [id])
+  servicioId    Int
+  servicio      Servicio    @relation(fields: [servicioId], references: [id])
+  clienta       String
+  telefono      String
+  inicio        DateTime
+  /// Fin del bloque (servicio + margen de limpieza)
+  fin           DateTime
+  estado        EstadoCita  @default(CONFIRMADA)
+  creadaEn      DateTime    @default(now())
+  venta         Venta?
+
+  @@index([inicio])
+  @@index([telefono])
+}
+
+enum MetodoPago {
+  EFECTIVO
+  TARJETA
+  TRANSFERENCIA
+}
+
+model Venta {
+  id       Int         @id @default(autoincrement())
+  citaId   Int?        @unique
+  cita     Cita?       @relation(fields: [citaId], references: [id])
+  clienta  String?
+  metodo   MetodoPago
+  total    Int
+  recibido Int?
+  creadaEn DateTime    @default(now())
+  items    VentaItem[]
+}
+
+model VentaItem {
+  id       Int    @id @default(autoincrement())
+  ventaId  Int
+  venta    Venta  @relation(fields: [ventaId], references: [id], onDelete: Cascade)
+  concepto String
+  precio   Int
+  cantidad Int
+}
